@@ -1,131 +1,160 @@
-# Data Catalog
+# 📖 Data Catalog
 
-## Overview
+---
 
-The **Gold Layer** represents the business-ready data model of the data warehouse. It contains cleaned, transformed, and analytics-optimized data organized into **dimension** and **fact** tables following a **Star Schema** design.
+# Overview
 
-### Tables
+The Gold Layer contains business-ready analytical tables built using a Star Schema.
 
-| Schema | Table | Type | Description |
-|--------|-------|------|-------------|
-| gold | dim_customers | Dimension | Stores customer information enriched with demographic and geographic attributes. |
-| gold | dim_products | Dimension | Stores product information and business attributes. |
-| gold | fact_sales | Fact | Stores transactional sales data linked to customer and product dimensions. |
+It consists of:
+
+- Customer Dimension
+- Product Dimension
+- Sales Fact
+
+---
+
+# Gold Layer Data Model
+
+<p align="center">
+<img src="images/star_schema.png" width="850">
+</p>
+
+---
+
+# Data Flow
+
+<p align="center">
+<img src="images/architecture.png" width="850">
+</p>
 
 ---
 
 # 1. gold.dim_customers
 
-### Purpose
-Stores customer details enriched with demographic and geographic information.
+Stores enriched customer information.
 
-## Columns
+| Column | Description |
+|----------|------------|
+| customer_key | Surrogate Primary Key |
+| customer_id | Customer ID from CRM |
+| customer_number | Business Customer Number |
+| first_name | First Name |
+| last_name | Last Name |
+| country | Customer Country |
+| marital_status | Married / Single |
+| gender | Male / Female |
+| birthdate | Customer Birthdate |
+| create_date | Record Creation Date |
 
-| Column Name | Data Type | Description |
-|-------------|-----------|-------------|
-| customer_key | INT | Surrogate key uniquely identifying each customer record in the dimension table. |
-| customer_id | INT | Original customer identifier from the source system. |
-| customer_number | NVARCHAR(50) | Business identifier assigned to the customer. |
-| first_name | NVARCHAR(50) | Customer's first name. |
-| last_name | NVARCHAR(50) | Customer's last name. |
-| country | NVARCHAR(50) | Country where the customer resides. |
-| marital_status | NVARCHAR(50) | Customer's marital status (e.g., Married, Single). |
-| gender | NVARCHAR(50) | Customer gender (e.g., Male, Female, n/a). |
-| birthdate | DATE | Customer's date of birth. |
-| create_date | DATE | Date when the customer record was created in the source system. |
+---
+
+Business Notes
+
+- Birthdate comes from ERP
+- Country comes from ERP
+- Customer profile comes from CRM
 
 ---
 
 # 2. gold.dim_products
 
-### Purpose
-Stores product information along with business attributes used for reporting and analysis.
+Stores business product information.
 
-## Columns
+| Column | Description |
+|----------|------------|
+| product_key | Surrogate Key |
+| product_id | Product ID |
+| product_number | Business Product Number |
+| product_name | Product Name |
+| category_id | Category Identifier |
+| category | Product Category |
+| subcategory | Product Subcategory |
+| maintenance_required | Yes / No |
+| cost | Product Cost |
+| product_line | Product Line |
+| start_date | Product Availability Date |
 
-| Column Name | Data Type | Description |
-|-------------|-----------|-------------|
-| product_key | INT | Surrogate key uniquely identifying each product record in the dimension table. |
-| product_id | INT | Original product identifier from the source system. |
-| product_number | NVARCHAR(50) | Business identifier assigned to the product. |
-| product_name | NVARCHAR(50) | Descriptive name of the product. |
-| category_id | NVARCHAR(50) | Identifier representing the product category. |
-| category | NVARCHAR(50) | High-level product category (e.g., Bikes, Components). |
-| subcategory | NVARCHAR(50) | Detailed product classification within a category. |
-| maintenance_required | NVARCHAR(50) | Indicates whether the product requires maintenance (Yes/No). |
-| cost | INT | Base cost of the product. |
-| product_line | NVARCHAR(50) | Product line or series to which the product belongs. |
-| start_date | DATE | Date when the product became available for sale. |
+---
+
+Business Notes
+
+- Category information originates from ERP.
+- Product information originates from CRM.
 
 ---
 
 # 3. gold.fact_sales
 
-### Purpose
-Stores transactional sales data used for analytical reporting and business intelligence.
+Contains transactional sales records.
 
-## Columns
-
-| Column Name | Data Type | Description |
-|-------------|-----------|-------------|
-| order_number | NVARCHAR(50) | Unique identifier assigned to each sales order. |
-| product_key | INT | Foreign key referencing **gold.dim_products**. |
-| customer_key | INT | Foreign key referencing **gold.dim_customers**. |
-| order_date | DATE | Date when the order was placed. |
-| shipping_date | DATE | Date when the order was shipped. |
-| due_date | DATE | Payment due date for the order. |
-| sales_amount | INT | Total sales amount for the order line. |
-| quantity | INT | Number of units sold. |
-| price | INT | Selling price per unit. |
+| Column | Description |
+|----------|------------|
+| order_number | Sales Order Number |
+| product_key | FK → dim_products |
+| customer_key | FK → dim_customers |
+| order_date | Order Date |
+| shipping_date | Shipping Date |
+| due_date | Due Date |
+| sales_amount | Total Sales |
+| quantity | Quantity Sold |
+| price | Unit Price |
 
 ---
 
-# Data Model
-
-The Gold Layer follows a **Star Schema**.
+Business Rule
 
 ```
-                    +----------------------+
-                    |   dim_customers      |
-                    +----------------------+
-                    | customer_key (PK)    |
-                    | customer_id          |
-                    | first_name           |
-                    | last_name            |
-                    | country              |
-                    | ...                  |
-                    +----------+-----------+
-                               |
-                               |
-                               |
-+----------------------+       |       +----------------------+
-|   dim_products       |       |       |     fact_sales       |
-+----------------------+       |       +----------------------+
-| product_key (PK)     |<------+------>| product_key (FK)     |
-| product_id           |               | customer_key (FK)    |
-| product_name         |               | order_number         |
-| category             |               | order_date           |
-| subcategory          |               | shipping_date        |
-| cost                 |               | due_date             |
-| ...                  |               | quantity             |
-+----------------------+               | price                |
-                                       | sales_amount         |
-                                       +----------------------+
+Sales Amount = Quantity × Price
 ```
-
-## Relationships
-
-| Parent Table | Primary Key | Child Table | Foreign Key | Relationship |
-|--------------|-------------|-------------|-------------|--------------|
-| gold.dim_customers | customer_key | gold.fact_sales | customer_key | One-to-Many |
-| gold.dim_products | product_key | gold.fact_sales | product_key | One-to-Many |
 
 ---
 
-# Notes
+# Star Schema Relationships
 
-- The **Gold Layer** is designed for reporting, dashboards, and business analytics.
-- **Dimension tables** store descriptive attributes.
-- **Fact tables** store measurable business events.
-- Surrogate keys (`customer_key`, `product_key`) are used to improve performance and maintain historical consistency.
-- The model follows **Star Schema** best practices to simplify analytical queries and optimize aggregation performance.
+| Parent | Child | Relationship |
+|---------|-------|--------------|
+| dim_customers | fact_sales | One-to-Many |
+| dim_products | fact_sales | One-to-Many |
+
+---
+
+# Source Mapping
+
+<p align="center">
+<img src="images/source_systems.png" width="850">
+</p>
+
+---
+
+# Medallion Architecture
+
+<p align="center">
+<img src="images/medallion_layers.png" width="900">
+</p>
+
+---
+
+# Table Summary
+
+| Table | Type | Purpose |
+|---------|------|----------|
+| dim_customers | Dimension | Customer Analytics |
+| dim_products | Dimension | Product Analytics |
+| fact_sales | Fact | Sales Analytics |
+
+---
+
+# Analytical Use Cases
+
+The Gold Layer supports:
+
+- Sales Reporting
+- Product Performance
+- Customer Analysis
+- Revenue Trends
+- Country-wise Sales
+- Product Category Analysis
+- Customer Segmentation
+- Dashboard Development
+- Business Intelligence
