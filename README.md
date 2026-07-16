@@ -1,4 +1,4 @@
-# 🏗️ SQL Data Warehouse & Analytics Project
+# 🏗️ SQL Data Warehouse 
 
 An end-to-end Data Warehouse project built using SQL Server that demonstrates modern Data Engineering practices including ETL, Data Cleaning, Data Integration, Data Modeling and Analytics.
 
